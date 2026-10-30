@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Signature B | منو</title>
+<style>
+:root{--c1:#a41231;--c2:#e0264d;--bg:#0c0c0d;--card:#171719;--txt:#f5f5f5;--mut:#b9b9bd}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:Vazirmatn,Tahoma,sans-serif}
+header{position:sticky;top:0;z-index:10;background:linear-gradient(135deg,var(--c1),#5c0a1d);padding:14px 16px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px}
+.logo span.b{background:#fff;color:var(--c1);width:36px;height:36px;display:grid;place-items:center;border-radius:10px;font-size:22px}
+.clock{font-size:13px;opacity:.9}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.tools input{background:#ffffff22;border:1px solid #ffffff44;color:#fff;border-radius:10px;padding:8px 12px;min-width:160px}
+.tools input::placeholder{color:#eee}
+button{background:#fff;color:var(--c1);border:0;border-radius:10px;padding:8px 12px;font-weight:700;cursor:pointer}
+button.ghost{background:#ffffff22;color:#fff;border:1px solid #ffffff44}
+nav{display:flex;gap:8px;overflow:auto;padding:12px 14px;position:sticky;top:68px;background:#0c0c0df2;z-index:9}
+nav button{white-space:nowrap;background:#1e1e21;color:#fff;border:1px solid #333}
+nav button.on{background:linear-gradient(135deg,var(--c2),var(--c1));border-color:transparent}
+main{padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;max-width:1100px;margin:auto}
+.card{background:var(--card);border:1px solid #2a2a2e;border-radius:16px;overflow:hidden;display:flex;flex-direction:column}
+.pic{height:130px;display:grid;place-items:center;font-size:64px;background:radial-gradient(circle at 50% 20%,#e0264d33,#0000),linear-gradient(180deg,#222,#111)}
+.pic img{width:100%;height:130px;object-fit:cover}
+.body{padding:12px}
+.name{font-weight:800;font-size:17px}
+.price{color:#ff8aa0;font-weight:800;margin:6px 0}
+.desc{color:var(--mut);font-size:13px;min-height:20px}
+.row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.row button{font-size:12px;padding:6px 9px}
+.sold{opacity:.45;filter:grayscale(1)}
+.badge{display:inline-block;background:var(--c2);font-size:11px;padding:3px 8px;border-radius:20px;margin-top:6px}
+footer{padding:20px;text-align:center;color:var(--mut);font-size:12px}
+footer a{color:#ff8aa0}
+.adm{display:none}.is-admin .adm{display:inline-block}
+[contenteditable="true"]{outline:1px dashed var(--c2);border-radius:6px;padding:2px}
+</style>
+</head>
+<body>
+<header>
+<div><div class="logo"><span class="b">B</span> Signature B | سیگنچر بی</div><div class="clock" id="clock"></div></div>
+<div class="tools">
+<input id="q" placeholder="جست‌وجو… مثل لاته">
+<button onclick="toggleFS()">تمام‌صفحه</button>
+<button class="ghost" onclick="askAdmin()">ویرایش قیمت (مدیریت)</button>
+</div>
+</header>
+<nav id="tabs"></nav>
+<main id="grid"></main>
+<footer>
+<div>چرخش خودکار هر ۱۲ ثانیه • <button class="ghost" onclick="nextCat()">بعدی</button> <button class="ghost" onclick="prevCat()">قبلی</button></div>
+<div style="margin-top:8px"><a href="#" onclick="askAdmin();return false">ورود مدیریت</a> • رمز پیش‌فرض ۱۳۹۰</div>
+</footer>
+<input type="file" id="file" accept="image/*" hidden>
+<script>
+let PASS_KEY='sigB_pass', DATA_KEY='sigBV5_github';
+function faToEn(s){return (s+'').replace(/[۰-۹]/g,d=> '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))}
+function getPass(){let p=localStorage.getItem(PASS_KEY);if(!p||faToEn(p)==='1234')return '1390';return p}
+let isAdmin=false;
+const DEFAULT={
+"نوشیدنی گرم":[{n:"اسپرسو",p:"80,000",d:"تک‌شات عربیکا",e:"☕",s:1},{n:"لاته",p:"120,000",d:"شیر + اسپرسو",e:"🥛",s:1},{n:"کاپوچینو",p:"115,000",d:"فوم شیر غلیظ",e:"☕",s:1}],
+"نوشیدنی سرد":[{n:"آیس لاته",p:"130,000",d:"سرد با یخ",e:"🧋",s:1},{n:"موهیتو",p:"110,000",d:"نعنا و لیمو",e:"🍋",s:1}],
+"غذا":[{n:"پاستا آلفردو",p:"280,000",d:"مرغ + سس خامه",e:"🍝",s:1},{n:"برگر مخصوص",p:"295,000",d:"گوشت + پنیر",e:"🍔",s:1}],
+"صبحانه":[{n:"املت ایرانی",p:"150,000",d:"گوجه + تخم‌مرغ",e:"🍳",s:1},{n:"پنکیک",p:"170,000",d:"عسل + کره",e:"🥞",s:1}],
+"شیک":[{n:"شیک شکلات",p:"180,000",d:"بستنی + شکلات",e:"🥤",s:1},{n:"شیک وانیل",p:"175,000",d:"بستنی وانیلی",e:"🥤",s:1}],
+"کیک و شیرینی":[{n:"چیزکیک",p:"140,000",d:"توت‌فرنگی",e:"🍰",s:1},{n:"کروسان",p:"95,000",d:"کره‌ای تازه",e:"🥐",s:1}]
+};
+let MENU={};let cat='';
+try{MENU=JSON.parse(localStorage.getItem(DATA_KEY))||DEFAULT}catch(e){MENU=DEFAULT}
+if(!MENU||!Object.keys(MENU).length)MENU=DEFAULT;
+cat=Object.keys(MENU)[0];
+let targetImg=null;
+function save(){localStorage.setItem(DATA_KEY,JSON.stringify(MENU))}
+function tick(){document.getElementById('clock').textContent=new Date().toLocaleString('fa-IR',{weekday:'long',hour:'2-digit',minute:'2-digit',second:'2-digit'})}setInterval(tick,1000);tick();
+function toggleFS(){if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen()}
+function renderTabs(){let t=document.getElementById('tabs');t.innerHTML='';Object.keys(MENU).forEach(k=>{let b=document.createElement('button');b.textContent=k;b.className=k===cat?'on':'';b.onclick=()=>{cat=k;render()};t.appendChild(b)});if(isAdmin){let a=document.createElement('button');a.textContent='+ بخش جدید';a.className='ghost';a.onclick=()=>{let n=prompt('اسم بخش جدید:');if(n){MENU[n]=[];cat=n;save();render()}};t.appendChild(a)}}
+function render(){renderTabs();let g=document.getElementById('grid');g.innerHTML='';let q=document.getElementById('q').value.trim();(MENU[cat]||[]).forEach((it,i)=>{if(q&&!(it.n.includes(q)||it.d.includes(q)))return;let d=document.createElement('div');d.className='card'+(it.s? '':' sold');d.innerHTML='<div class="pic">'+(it.img?'<img src="'+it.img+'">':(it.e||'☕'))+'</div><div class="body"><div class="name" '+(isAdmin?'contenteditable="true"':'')+'>'+it.n+'</div><div class="price" '+(isAdmin?'contenteditable="true"':'')+'>'+it.p+' تومان</div><div class="desc" '+(isAdmin?'contenteditable="true"':'')+'>'+(it.d||'')+'</div>'+(it.s?'':'<span class="badge">ناموجود</span>')+'<div class="row adm"><button onclick="chgImg('+i+')">عوض کردن عکس</button><button onclick="toggleS('+i+')">موجود / ناموجود</button><button onclick="delIt('+i+')">حذف</button></div></div>';let nn=d.querySelector('.name'),pp=d.querySelector('.price'),dd=d.querySelector('.desc');if(isAdmin){nn.oninput=()=>{it.n=nn.textContent;save()};pp.oninput=()=>{it.p=pp.textContent.replace(' تومان','');save()};dd.oninput=()=>{it.d=dd.textContent;save()}}g.appendChild(d)});if(isAdmin){let add=document.createElement('button');add.textContent='+ افزودن آیتم در '+cat;add.onclick=()=>{MENU[cat].push({n:"آیتم جدید",p:"100,000",d:"توضیح",e:"✨",s:1});save();render()};g.appendChild(add)}document.body.classList.toggle('is-admin',isAdmin)}
+document.getElementById('q').oninput=render;
+function askAdmin(){if(isAdmin){isAdmin=false;render();return}let v=prompt('رمز مدیریت:');if(v==null)return;if(faToEn(v)===getPass()){isAdmin=true;render()}else alert('رمز اشتباه است')}
+function toggleS(i){MENU[cat][i].s=MENU[cat][i].s?0:1;save();render()}
+function delIt(i){if(confirm('حذف شود؟')){MENU[cat].splice(i,1);save();render()}}
+function chgImg(i){targetImg=i;document.getElementById('file').click()}
+document.getElementById('file').onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{MENU[cat][targetImg].img=r.result;MENU[cat][targetImg].e='';save();render()};r.readAsDataURL(f)};
+let idx=0;setInterval(()=>{if(document.getElementById('q').value)return;let k=Object.keys(MENU);idx=(idx+1)%k.length;cat=k[idx];render()},12000);
+function nextCat(){let k=Object.keys(MENU);cat=k[(k.indexOf(cat)+1)%k.length];render()}
+function prevCat(){let k=Object.keys(MENU);cat=k[(k.indexOf(cat)-1+k.length)%k.length];render()}
+render();
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Signature B | منو</title>
+<style>
+:root{--c1:#a41231;--c2:#e0264d;--bg:#0c0c0d;--card:#171719;--txt:#f5f5f5;--mut:#b9b9bd}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:Vazirmatn,Tahoma,sans-serif}
+header{position:sticky;top:0;z-index:10;background:linear-gradient(135deg,var(--c1),#5c0a1d);padding:14px 16px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px}
+.logo span.b{background:#fff;color:var(--c1);width:36px;height:36px;display:grid;place-items:center;border-radius:10px;font-size:22px}
+.clock{font-size:13px;opacity:.9}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.tools input{background:#ffffff22;border:1px solid #ffffff44;color:#fff;border-radius:10px;padding:8px 12px;min-width:160px}
+.tools input::placeholder{color:#eee}
+button{background:#fff;color:var(--c1);border:0;border-radius:10px;padding:8px 12px;font-weight:700;cursor:pointer}
+button.ghost{background:#ffffff22;color:#fff;border:1px solid #ffffff44}
+nav{display:flex;gap:8px;overflow:auto;padding:12px 14px;position:sticky;top:68px;background:#0c0c0df2;z-index:9}
+nav button{white-space:nowrap;background:#1e1e21;color:#fff;border:1px solid #333}
+nav button.on{background:linear-gradient(135deg,var(--c2),var(--c1));border-color:transparent}
+main{padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;max-width:1100px;margin:auto}
+.card{background:var(--card);border:1px solid #2a2a2e;border-radius:16px;overflow:hidden;display:flex;flex-direction:column}
+.pic{height:130px;display:grid;place-items:center;font-size:64px;background:radial-gradient(circle at 50% 20%,#e0264d33,#0000),linear-gradient(180deg,#222,#111)}
+.pic img{width:100%;height:130px;object-fit:cover}
+.body{padding:12px}
+.name{font-weight:800;font-size:17px}
+.price{color:#ff8aa0;font-weight:800;margin:6px 0}
+.desc{color:var(--mut);font-size:13px;min-height:20px}
+.row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.row button{font-size:12px;padding:6px 9px}
+.sold{opacity:.45;filter:grayscale(1)}
+.badge{display:inline-block;background:var(--c2);font-size:11px;padding:3px 8px;border-radius:20px;margin-top:6px}
+footer{padding:20px;text-align:center;color:var(--mut);font-size:12px}
+footer a{color:#ff8aa0}
+.adm{display:none}.is-admin .adm{display:inline-block}
+[contenteditable="true"]{outline:1px dashed var(--c2);border-radius:6px;padding:2px}
+</style>
+</head>
+<body>
+<header>
+<div><div class="logo"><span class="b">B</span> Signature B | سیگنچر بی</div><div class="clock" id="clock"></div></div>
+<div class="tools">
+<input id="q" placeholder="جست‌وجو… مثل لاته">
+<button onclick="toggleFS()">تمام‌صفحه</button>
+<button class="ghost" onclick="askAdmin()">ویرایش قیمت (مدیریت)</button>
+</div>
+</header>
+<nav id="tabs"></nav>
+<main id="grid"></main>
+<footer>
+<div>چرخش خودکار هر ۱۲ ثانیه • <button class="ghost" onclick="nextCat()">بعدی</button> <button class="ghost" onclick="prevCat()">قبلی</button></div>
+<div style="margin-top:8px"><a href="#" onclick="askAdmin();return false">ورود مدیریت</a> • رمز پیش‌فرض ۱۳۹۰</div>
+</footer>
+<input type="file" id="file" accept="image/*" hidden>
+<script>
+let PASS_KEY='sigB_pass', DATA_KEY='sigBV5_github';
+function faToEn(s){return (s+'').replace(/[۰-۹]/g,d=> '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))}
+function getPass(){let p=localStorage.getItem(PASS_KEY);if(!p||faToEn(p)==='1234')return '1390';return p}
+let isAdmin=false;
+const DEFAULT={
+"نوشیدنی گرم":[{n:"اسپرسو",p:"80,000",d:"تک‌شات عربیکا",e:"☕",s:1},{n:"لاته",p:"120,000",d:"شیر + اسپرسو",e:"🥛",s:1},{n:"کاپوچینو",p:"115,000",d:"فوم شیر غلیظ",e:"☕",s:1}],
+"نوشیدنی سرد":[{n:"آیس لاته",p:"130,000",d:"سرد با یخ",e:"🧋",s:1},{n:"موهیتو",p:"110,000",d:"نعنا و لیمو",e:"🍋",s:1}],
+"غذا":[{n:"پاستا آلفردو",p:"280,000",d:"مرغ + سس خامه",e:"🍝",s:1},{n:"برگر مخصوص",p:"295,000",d:"گوشت + پنیر",e:"🍔",s:1}],
+"صبحانه":[{n:"املت ایرانی",p:"150,000",d:"گوجه + تخم‌مرغ",e:"🍳",s:1},{n:"پنکیک",p:"170,000",d:"عسل + کره",e:"🥞",s:1}],
+"شیک":[{n:"شیک شکلات",p:"180,000",d:"بستنی + شکلات",e:"🥤",s:1},{n:"شیک وانیل",p:"175,000",d:"بستنی وانیلی",e:"🥤",s:1}],
+"کیک و شیرینی":[{n:"چیزکیک",p:"140,000",d:"توت‌فرنگی",e:"🍰",s:1},{n:"کروسان",p:"95,000",d:"کره‌ای تازه",e:"🥐",s:1}]
+};
+let MENU={};let cat='';
+try{MENU=JSON.parse(localStorage.getItem(DATA_KEY))||DEFAULT}catch(e){MENU=DEFAULT}
+if(!MENU||!Object.keys(MENU).length)MENU=DEFAULT;
+cat=Object.keys(MENU)[0];
+let targetImg=null;
+function save(){localStorage.setItem(DATA_KEY,JSON.stringify(MENU))}
+function tick(){document.getElementById('clock').textContent=new Date().toLocaleString('fa-IR',{weekday:'long',hour:'2-digit',minute:'2-digit',second:'2-digit'})}setInterval(tick,1000);tick();
+function toggleFS(){if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen()}
+function renderTabs(){let t=document.getElementById('tabs');t.innerHTML='';Object.keys(MENU).forEach(k=>{let b=document.createElement('button');b.textContent=k;b.className=k===cat?'on':'';b.onclick=()=>{cat=k;render()};t.appendChild(b)});if(isAdmin){let a=document.createElement('button');a.textContent='+ بخش جدید';a.className='ghost';a.onclick=()=>{let n=prompt('اسم بخش جدید:');if(n){MENU[n]=[];cat=n;save();render()}};t.appendChild(a)}}
+function render(){renderTabs();let g=document.getElementById('grid');g.innerHTML='';let q=document.getElementById('q').value.trim();(MENU[cat]||[]).forEach((it,i)=>{if(q&&!(it.n.includes(q)||it.d.includes(q)))return;let d=document.createElement('div');d.className='card'+(it.s? '':' sold');d.innerHTML='<div class="pic">'+(it.img?'<img src="'+it.img+'">':(it.e||'☕'))+'</div><div class="body"><div class="name" '+(isAdmin?'contenteditable="true"':'')+'>'+it.n+'</div><div class="price" '+(isAdmin?'contenteditable="true"':'')+'>'+it.p+' تومان</div><div class="desc" '+(isAdmin?'contenteditable="true"':'')+'>'+(it.d||'')+'</div>'+(it.s?'':'<span class="badge">ناموجود</span>')+'<div class="row adm"><button onclick="chgImg('+i+')">عوض کردن عکس</button><button onclick="toggleS('+i+')">موجود / ناموجود</button><button onclick="delIt('+i+')">حذف</button></div></div>';let nn=d.querySelector('.name'),pp=d.querySelector('.price'),dd=d.querySelector('.desc');if(isAdmin){nn.oninput=()=>{it.n=nn.textContent;save()};pp.oninput=()=>{it.p=pp.textContent.replace(' تومان','');save()};dd.oninput=()=>{it.d=dd.textContent;save()}}g.appendChild(d)});if(isAdmin){let add=document.createElement('button');add.textContent='+ افزودن آیتم در '+cat;add.onclick=()=>{MENU[cat].push({n:"آیتم جدید",p:"100,000",d:"توضیح",e:"✨",s:1});save();render()};g.appendChild(add)}document.body.classList.toggle('is-admin',isAdmin)}
+document.getElementById('q').oninput=render;
+function askAdmin(){if(isAdmin){isAdmin=false;render();return}let v=prompt('رمز مدیریت:');if(v==null)return;if(faToEn(v)===getPass()){isAdmin=true;render()}else alert('رمز اشتباه است')}
+function toggleS(i){MENU[cat][i].s=MENU[cat][i].s?0:1;save();render()}
+function delIt(i){if(confirm('حذف شود؟')){MENU[cat].splice(i,1);save();render()}}
+function chgImg(i){targetImg=i;document.getElementById('file').click()}
+document.getElementById('file').onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{MENU[cat][targetImg].img=r.result;MENU[cat][targetImg].e='';save();render()};r.readAsDataURL(f)};
+let idx=0;setInterval(()=>{if(document.getElementById('q').value)return;let k=Object.keys(MENU);idx=(idx+1)%k.length;cat=k[idx];render()},12000);
+function nextCat(){let k=Object.keys(MENU);cat=k[(k.indexOf(cat)+1)%k.length];render()}
+function prevCat(){let k=Object.keys(MENU);cat=k[(k.indexOf(cat)-1+k.length)%k.length];render()}
+render();
+</script>
+</body>
+</html>
